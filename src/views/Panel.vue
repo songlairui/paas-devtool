@@ -2,6 +2,12 @@
   <div class="panel">
     <div class="left">
       <h1>{{title}}</h1>
+      <h2>
+        <span @click="clear">X</span>
+        <label>
+          <input type="checkbox" v-model="preserve">preserve
+        </label>
+      </h2>
       <ul>
         <li
           :class="{curr:idx ===currentIdx}"
@@ -10,18 +16,25 @@
           @click="select(idx)"
         >
           {{ item.freeze.res.startedDateTime | localeTime }}
-          {{ item.freeze.res.request.url }}
+          {{ item.freeze.res.request.url | omitOrigin }}
         </li>
       </ul>
     </div>
     <div class="right" v-if="right">
       <span class="close" @click="unSelect">x</span>
-      {{currentVal}}
+      <pre>{{currentVal}}</pre>
     </div>
   </div>
 </template>
 <script>
 import { trimRaw } from "../utils/jsonStr";
+
+let origin = "";
+chrome.devtools.inspectedWindow.eval("location.origin", result => {
+  if (result) {
+    origin = result;
+  }
+});
 
 export default {
   name: "panel",
@@ -31,18 +44,30 @@ export default {
       lists: [],
       currentVal: "",
       currentIdx: undefined,
-      right: false
+      right: false,
+      preserve: false
     };
   },
   created() {
+    chrome.devtools.network.onNavigated.addListener(this.naviCb);
     chrome.devtools.network.onRequestFinished.addListener(this.cb);
   },
   filters: {
     localeTime(str) {
       return `${new Date(str).toLocaleTimeString()} ${str.slice(19, 23)}`;
+    },
+    omitOrigin(url) {
+      return url.replace(origin, "");
     }
   },
   methods: {
+    naviCb() {
+      if (this.preserve) return;
+      this.clear();
+    },
+    clear() {
+      this.lists = [];
+    },
     cb(res) {
       if (!res) return;
       const {
@@ -66,7 +91,9 @@ export default {
         freeze: { res }
       } = item;
       res.getContent(content => {
-        this.currentVal = trimRaw(content);
+        this.currentVal = content
+          ? JSON.stringify(JSON.parse(trimRaw(content)), null, 1)
+          : "--";
       });
     },
     unSelect() {
@@ -90,16 +117,23 @@ export default {
   background: rgba(255, 255, 255, 0.3);
   color: lightcyan;
   font-family: "Courier New", Courier, monospace;
+  overflow: hidden;
 }
 .left,
 .right {
-  flex: 1;
+  flex: 1 0 50%;
+  height: 100%;
+  overflow: auto;
 }
 .left ul li,
 .right span.close {
   cursor: pointer;
 }
-
+.left ul li {
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  overflow: hidden;
+}
 .left ul li.curr {
   background: rgba(255, 255, 255, 0.3);
 }
