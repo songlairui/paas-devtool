@@ -5,7 +5,7 @@ function installProxy(tabId) {
   chrome.tabs.executeScript(
     tabId,
     {
-      file: '/build/proxy.js'
+      file: '/build/inject.js'
     },
     function(res) {
       console.log('executeScript to tab ', tabId, res);
