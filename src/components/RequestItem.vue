@@ -33,11 +33,25 @@ export default {
 <style scoped>
 .request-item {
   display: flex;
+  padding: 3px 5px;
+  color: #555;
 }
 .request-item > div {
   padding: 1px 3px;
 }
 .first {
   flex: 0 0 3em;
+}
+.url {
+  font-weight: 700;
+}
+.url::first-line {
+  color: #222;
+}
+.curr .request-item {
+  color: #eee;
+}
+.curr .url::first-line {
+  color: #fff;
 }
 </style>

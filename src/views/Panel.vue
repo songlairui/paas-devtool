@@ -245,7 +245,8 @@ export default {
   overflow: hidden;
 }
 .left ul li.curr {
-  background: rgba(255, 255, 255, 0.3);
+  background: #569aff;
+  color: #fff;
 }
 .configure {
   background: #f8f9fd;
