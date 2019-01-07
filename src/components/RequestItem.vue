@@ -3,7 +3,7 @@
     <div class="first">
       {{item.method}}
       <br>
-      {{item.status}}
+      {{item.status === -1 ? 'waiting' : item.status}}
     </div>
     <div class="url">
       {{shortUrl[0]}}

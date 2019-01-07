@@ -27,7 +27,7 @@
 </template>
 <script>
 import { trimRaw } from "../utils/jsonStr";
-import { getTabId, getOrigin, getHAREntries } from "../utils";
+import { getTabId, getOrigin, getHAREntries, getResContent } from "../utils";
 
 let ORIGIN = "";
 let sparseMarks = [];
@@ -161,35 +161,40 @@ export default {
       const targetIdx = sparseMarks
         .slice(startKey, endKey)
         .findIndex(target => {
-          const needFillRes = !target._._[0];
-          const urlEqual = url === target.url;
-          const methodEqual = method === target.method;
-          if (!needFillRes || !urlEqual || !methodEqual) return false;
-          console.info("find target for res", target, res);
-          return true;
+          if (!target) return;
+          try {
+            const needFillRes = !target._._[0];
+            const urlEqual = url === target.url;
+            const methodEqual = method === target.method;
+            if (!needFillRes || !urlEqual || !methodEqual) return false;
+            return true;
+          } catch (error) {
+            return false;
+          }
         });
       if (targetIdx === -1) {
         // 忽略
         return;
       }
-      const targetItem = sparseMarks[targetIdx];
+      const targetItem = sparseMarks[startKey + targetIdx];
       targetItem._._[0] = res;
       targetItem.status = status;
-      delete sparseMarks[targetIdx];
+      delete sparseMarks[startKey + targetIdx];
     },
-    select(idx) {
+    async select(idx) {
       this.currentIdx = idx;
       const item = this.lists[idx];
       this.right = true;
-      this.currentVal = "loading...";
+      this.currentVal = "parsing...";
       const {
-        freeze: { res }
+        _: {
+          _: [request]
+        }
       } = item;
-      res.getContent(content => {
-        this.currentVal = content
-          ? JSON.stringify(JSON.parse(trimRaw(content)), null, 1)
-          : "--";
-      });
+      const content = await getResContent(request);
+      this.currentVal = content
+        ? JSON.stringify(JSON.parse(trimRaw(content)), null, 1)
+        : "--";
     },
     unSelect() {
       this.right = false;
@@ -208,6 +213,7 @@ export default {
 <style>
 .wrapper {
   flex: 1;
+  width: 100%;
   height: 100%;
   display: flex;
   flex-direction: column;

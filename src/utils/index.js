@@ -29,3 +29,11 @@ export async function getHAREntries() {
     });
   });
 }
+
+export async function getResContent(res) {
+  return await new Promise(r => {
+    res.getContent(content => {
+      r(content);
+    });
+  });
+}
