@@ -16,6 +16,7 @@ function createConfig(config, target = { chrome: 52, firefox: 48 }) {
   const baseConfig = {
     mode: process.env.NODE_ENV === 'production' ? 'production' : 'development',
     resolve: {
+      extensions: ['.js', '.vue', '.json'],
       alias: {
         src: path.resolve(__dirname, 'src'),
         views: path.resolve(__dirname, 'src/views'),
