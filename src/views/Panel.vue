@@ -19,8 +19,7 @@
         </ul>
       </div>
       <div class="right" v-if="right">
-        <span class="close" @click="unSelect">x</span>
-        <pre>{{currentVal}}</pre>
+        <request-detail :content="currentVal" @pop="unSelect"/>
       </div>
     </div>
   </div>
@@ -197,6 +196,7 @@ export default {
         : "--";
     },
     unSelect() {
+      this.currentVal = "";
       this.right = false;
       this.currentIdx = undefined;
     }

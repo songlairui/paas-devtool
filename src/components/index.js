@@ -1,5 +1,6 @@
-import RequestItem from './RequestItem';
 import Switcher from './Switcher';
 import TextBtn from './TextBtn';
+import RequestItem from './RequestItem';
+import RequestDetail from './RequestDetail';
 
-export default [RequestItem, Switcher, TextBtn];
+export default [Switcher, TextBtn, RequestDetail, RequestItem];
