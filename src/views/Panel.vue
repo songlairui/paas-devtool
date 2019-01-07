@@ -1,40 +1,36 @@
 <template>
-  <div class="panel">
-    <div class="left">
-      <h1>{{title}}</h1>
-      <h2>
-        <span @click="clear">X</span>
-        <label>
-          <input type="checkbox" v-model="preserve">preserve
-        </label>
-      </h2>
-      <ul>
-        <li
-          :class="{curr:idx ===currentIdx}"
-          v-for="(item, idx) in lists"
-          :key="idx"
-          @click="select(idx)"
-        >
-          {{ item.freeze.res.startedDateTime | localeTime }}
-          {{ item.freeze.res.request.url | omitOrigin }}
-        </li>
-      </ul>
+  <div class="wrapper">
+    <div class="configure">
+      <text-btn label="清空" @click="clear"/>
+      <switcher label="保留记录" v-model="preserve"/>
+      <text-btn label="👂" :l="2" @click="addHooks" v-if="!hooked"/>
     </div>
-    <div class="right" v-if="right">
-      <span class="close" @click="unSelect">x</span>
-      <pre>{{currentVal}}</pre>
+    <div class="panel">
+      <div class="left">
+        <ul>
+          <li
+            :class="{curr:idx ===currentIdx}"
+            v-for="(item, idx) in lists"
+            :key="idx"
+            @click="select(idx)"
+          >
+            <request-item :item="item"/>
+          </li>
+        </ul>
+      </div>
+      <div class="right" v-if="right">
+        <span class="close" @click="unSelect">x</span>
+        <pre>{{currentVal}}</pre>
+      </div>
     </div>
   </div>
 </template>
 <script>
 import { trimRaw } from "../utils/jsonStr";
+import { getTabId, getOrigin } from "../utils";
 
-let origin = "";
-chrome.devtools.inspectedWindow.eval("location.origin", result => {
-  if (result) {
-    origin = result;
-  }
-});
+let ORIGIN = "";
+let pool = {};
 
 export default {
   name: "panel",
@@ -45,12 +41,24 @@ export default {
       currentVal: "",
       currentIdx: undefined,
       right: false,
-      preserve: false
+      preserve: false,
+      tabId: null,
+      hooked: false
     };
   },
-  created() {
-    chrome.devtools.network.onNavigated.addListener(this.naviCb);
-    chrome.devtools.network.onRequestFinished.addListener(this.cb);
+  async created() {
+    const [tabId, origin] = await Promise.all([
+      await getTabId(),
+      await getOrigin()
+    ]);
+    console.info({ tabId, origin });
+    ORIGIN = origin;
+    this.tabId = tabId;
+    if (!tabId) {
+      console.info("hook by self", this);
+    } else {
+      this.addHooks();
+    }
   },
   filters: {
     localeTime(str) {
@@ -61,14 +69,44 @@ export default {
     }
   },
   methods: {
+    addHooks() {
+      if (this.hooked || !this.tabId) return;
+      this.hooked = true;
+      chrome.devtools.network.onNavigated.addListener(this.naviCb);
+      chrome.devtools.network.onRequestFinished.addListener(this.cb);
+      chrome.webRequest.onBeforeRequest.addListener(
+        this.markCb,
+        // filters
+        { urls: ["<all_urls>"], tabId: this.tabId },
+        // extraInfoSpec
+        ["blocking", "requestBody"]
+      );
+    },
+    markCb(request) {
+      console.info("req", request);
+      this.lists.push(request);
+      const key = parseInt(request.timeStamp);
+      if (!pool[key]) {
+        pool[key] = [];
+      }
+    },
     naviCb() {
       if (this.preserve) return;
       this.clear();
     },
     clear() {
+      pool = {};
       this.lists = [];
     },
     cb(res) {
+      console.warn("cb");
+      const stampKey = res.startedDateTime;
+      if (!pool[stampKey]) {
+        console.warn("no start time", stampKey);
+      } else {
+        pool[stampKey].push(res);
+      }
+      return;
       if (!res) return;
       const {
         request: { method, postData, url },
@@ -111,11 +149,17 @@ export default {
 };
 </script>
 <style>
+.wrapper {
+  flex: 1;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
 .panel {
   flex: 1;
   display: flex;
   background: rgba(255, 255, 255, 0.3);
-  color: lightcyan;
+  color: #569aff;
   font-family: "Courier New", Courier, monospace;
   overflow: hidden;
 }
@@ -136,5 +180,9 @@ export default {
 }
 .left ul li.curr {
   background: rgba(255, 255, 255, 0.3);
+}
+.configure {
+  background: #f8f9fd;
+  border-bottom: thin solid silver;
 }
 </style>
