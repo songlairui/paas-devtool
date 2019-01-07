@@ -1,11 +1,16 @@
 <template>
   <div class="request-item">
-    <div class="first">{{item.method}}</div>
+    <div class="first">
+      {{item.method}}
+      <br>
+      {{item.status}}
+    </div>
     <div class="url">
       {{shortUrl[0]}}
       <br>
       {{shortUrl[1]}}
     </div>
+    <div class="stamp">{{item.timeStamp}}</div>
   </div>
 </template>
 <script>

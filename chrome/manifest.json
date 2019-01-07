@@ -20,10 +20,15 @@
   },
   "web_accessible_resources": ["devtools.html", "devtools-background.html"],
   "devtools_page": "devtools-background.html",
-  "background": {
-    "scripts": ["build/background.js"],
-    "persistent": false
-  },
-  "permissions": ["http://*/*", "https://*/*", "file:///*", "contextMenus"],
+  "permissions": [
+    "http://*/*",
+    "https://*/*",
+    "file:///*",
+    "contextMenus",
+    "webRequest",
+    "webRequestBlocking",
+    "tabs",
+    "debugger"
+  ],
   "content_scripts": []
 }

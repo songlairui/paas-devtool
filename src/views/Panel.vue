@@ -3,7 +3,7 @@
     <div class="configure">
       <text-btn label="清空" @click="clear"/>
       <switcher label="保留记录" v-model="preserve"/>
-      <text-btn label="👂" :l="2" @click="addHooks" v-if="!hooked"/>
+      <text-btn label="debug" :l="5" @click="debug"/>
     </div>
     <div class="panel">
       <div class="left">
@@ -27,10 +27,11 @@
 </template>
 <script>
 import { trimRaw } from "../utils/jsonStr";
-import { getTabId, getOrigin } from "../utils";
+import { getTabId, getOrigin, getHAREntries } from "../utils";
 
 let ORIGIN = "";
-let pool = {};
+let sparseMarks = [];
+let beginStamp = +new Date();
 
 export default {
   name: "panel",
@@ -51,11 +52,11 @@ export default {
       await getTabId(),
       await getOrigin()
     ]);
-    console.info({ tabId, origin });
     ORIGIN = origin;
     this.tabId = tabId;
+    await this.initPreserveLogs();
     if (!tabId) {
-      console.info("hook by self", this);
+      console.warn("hook failed");
     } else {
       this.addHooks();
     }
@@ -69,6 +70,30 @@ export default {
     }
   },
   methods: {
+    async initPreserveLogs() {
+      const entries = await getHAREntries();
+      if (!entries.length) return;
+      entries.forEach(entry => {
+        const {
+          startedDateTime,
+          request: { method, httpVersion, url },
+          response: {
+            content: { mimeType },
+            status
+          }
+        } = entry;
+        if (!httpVersion.startsWith("HTTP")) return;
+        if (mimeType !== "application/json") return;
+        this.lists.push({
+          _: Object.freeze({ _: [entry] }),
+          initiator: ORIGIN,
+          timeStamp: +new Date(startedDateTime),
+          method,
+          url,
+          status
+        });
+      });
+    },
     addHooks() {
       if (this.hooked || !this.tabId) return;
       this.hooked = true;
@@ -76,49 +101,81 @@ export default {
       chrome.devtools.network.onRequestFinished.addListener(this.cb);
       chrome.webRequest.onBeforeRequest.addListener(
         this.markCb,
-        // filters
         { urls: ["<all_urls>"], tabId: this.tabId },
-        // extraInfoSpec
         ["blocking", "requestBody"]
       );
     },
+    debug() {
+      console.info("this", this.lists, sparseMarks);
+    },
     markCb(request) {
-      console.info("req", request);
+      if (!request) return;
+      if (request.type !== "xmlhttprequest") return;
+      ["frameId", "tabId", "parentFrameId", "type"].forEach(key => {
+        delete request[key];
+      });
+      // place a freeze place
+      request.status = -1;
+      request._ = Object.freeze({ _: [] });
       this.lists.push(request);
-      const key = parseInt(request.timeStamp);
-      if (!pool[key]) {
-        pool[key] = [];
+      // 乐观认为统一毫秒之内，请求不超过10个，观测到的最多两个
+      let key = parseInt(request.timeStamp - beginStamp) * 10;
+      const end = key + 10;
+      while (sparseMarks[key]) {
+        if (key >= end) {
+          console.warn("too dense request");
+          return;
+        }
+        // 向后逐个尝试存储
+        key++;
       }
+      sparseMarks[key] = request;
     },
     naviCb() {
       if (this.preserve) return;
       this.clear();
     },
     clear() {
-      pool = {};
+      sparseMarks = [];
       this.lists = [];
     },
     cb(res) {
-      console.warn("cb");
-      const stampKey = res.startedDateTime;
-      if (!pool[stampKey]) {
-        console.warn("no start time", stampKey);
-      } else {
-        pool[stampKey].push(res);
-      }
-      return;
       if (!res) return;
-      const {
-        request: { method, postData, url },
-        response: { content, status, statusText }
-      } = res;
-      if (content.mimeType === "application/json") {
-        this.lists.push({
-          freeze: Object.freeze({
-            res
-          })
-        });
+      if (!res.request.httpVersion.startsWith("HTTP")) {
+        // 只记录 HTTP
+        return;
       }
+      const {
+        startedDateTime,
+        timings: { _blocked_queueing },
+        request: { url, method },
+        response: { status }
+      } = res;
+      const startKey =
+        (+new Date(res.startedDateTime) -
+          beginStamp +
+          Math.floor(_blocked_queueing)) *
+        10;
+      const endKey = startKey + 20; // 两部分均由floor变为ceil，则误差范围为10的2倍
+      // 稀疏数组不会遍历间隙
+      const targetIdx = sparseMarks
+        .slice(startKey, endKey)
+        .findIndex(target => {
+          const needFillRes = !target._._[0];
+          const urlEqual = url === target.url;
+          const methodEqual = method === target.method;
+          if (!needFillRes || !urlEqual || !methodEqual) return false;
+          console.info("find target for res", target, res);
+          return true;
+        });
+      if (targetIdx === -1) {
+        // 忽略
+        return;
+      }
+      const targetItem = sparseMarks[targetIdx];
+      targetItem._._[0] = res;
+      targetItem.status = status;
+      delete sparseMarks[targetIdx];
     },
     select(idx) {
       this.currentIdx = idx;
@@ -168,6 +225,9 @@ export default {
   flex: 1 0 50%;
   height: 100%;
   overflow: auto;
+}
+.left > ul > li:nth-child(odd) {
+  background: #f5f5f5;
 }
 .left ul li,
 .right span.close {

@@ -21,3 +21,11 @@ export async function getOrigin() {
     });
   });
 }
+
+export async function getHAREntries() {
+  return await new Promise(r => {
+    chrome.devtools.network.getHAR(({ entries }) => {
+      r(entries);
+    });
+  });
+}
