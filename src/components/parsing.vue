@@ -82,7 +82,7 @@ export default {
   padding-top: 30px;
 }
 .fixed {
-  top: 28px;
+  top: 0px;
   position: fixed;
   left: 50%;
   z-index: 999;

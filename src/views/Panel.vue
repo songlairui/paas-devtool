@@ -1,8 +1,8 @@
 <template>
   <div class="wrapper">
     <div class="configure">
-      <text-btn label="清空" @click="clear"/>
-      <switcher label="保留记录" v-model="preserve"/>
+      <text-btn v-if="lists.length" label="清空" @click="clear"/>
+      <!-- <switcher label="保留记录" v-model="preserve"/> -->
     </div>
     <div class="panel">
       <div class="left">
@@ -272,7 +272,9 @@ export default {
   color: #fff;
 }
 .configure {
-  background: #f8f9fd;
-  border-bottom: thin solid silver;
+  position: fixed;
+  top: 0;
+  right: 50%;
+  z-index: 999;
 }
 </style>
