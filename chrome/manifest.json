@@ -1,22 +1,22 @@
 {
-  "name": "lary devtools",
+  "name": "PaaS Devtools",
   "version": "0.0.1",
   "version_name": "init",
-  "description": "playground.",
+  "description": "mypaas 相关网站中，调试 API request/response payload",
   "manifest_version": 2,
   "icons": {
-    "16": "icons/LARY-16.png",
-    "48": "icons/LARY-48.png",
-    "128": "icons/LARY-128.png"
+    "16": "icons/paas_16.png",
+    "48": "icons/paas_48.png",
+    "128": "icons/paas_128.png"
   },
   "browser_action": {
     "default_icon": {
-      "16": "icons/LARY-16.png",
-      "48": "icons/LARY-48.png",
-      "128": "icons/LARY-128.png"
+      "16": "icons/paas_16.png",
+      "48": "icons/paas_48.png",
+      "128": "icons/paas_128.png"
     },
     "default_title": "Devtools",
-    "default_popup": "popups/not-found.html"
+    "default_popup": "popups/popups.html"
   },
   "web_accessible_resources": ["devtools.html", "devtools-background.html"],
   "devtools_page": "devtools-background.html",

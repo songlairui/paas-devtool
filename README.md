@@ -1,13 +1,12 @@
-# 制作 chrome extension 脚手架
+# paas devtool
 
-使用 es6 语法
+> 调试 api 的请求响应内容， 避免手动复制
 
-参照 vue-devtools
+## 使用方法
 
-## 目录
+1. build
+`yarn build`
+2. 加载 chrome 目录
 
-- dist 输出目录
-
-## Q
-
-devtool-background 、 panel 为两个页面，即便 import 同一个文件，并不会访问一个内存地址
+3. 审查工具
+在 mypaas.com.cn 网站，会新增选项卡 PaaS
