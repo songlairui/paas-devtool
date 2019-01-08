@@ -16,8 +16,12 @@ export default {
     Parsing
   },
   props: {
-    content: {
-      type: String
+    detail: {
+      type: Object,
+      default: () => ({
+        requestText: "",
+        responseText: ""
+      })
     }
   },
   data() {
@@ -30,7 +34,7 @@ export default {
       return [
         {
           path: "root",
-          value: this.content
+          value: this.detail
         },
         ...this.stacks
       ];

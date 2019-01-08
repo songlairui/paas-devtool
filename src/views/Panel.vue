@@ -18,7 +18,7 @@
         </ul>
       </div>
       <div class="right" v-if="right">
-        <request-detail :content="currentVal" @pop="unSelect"/>
+        <request-detail :detail="detail" @pop="unSelect"/>
       </div>
     </div>
   </div>
@@ -37,12 +37,15 @@ export default {
     return {
       title: "Panel in dev 3",
       lists: [],
-      currentVal: "",
       currentIdx: undefined,
       right: false,
       preserve: false,
       tabId: null,
-      hooked: false
+      hooked: false,
+      detail: {
+        requestText: "",
+        responseText: ""
+      }
     };
   },
   async created() {
@@ -134,7 +137,10 @@ export default {
       this.clear();
     },
     clear() {
-      this.currentVal = "";
+      this.detail = {
+        requestText: "",
+        responseText: ""
+      };
       this.right = false;
       sparseMarks = [];
       this.lists = [];
@@ -143,7 +149,7 @@ export default {
       if (!res) return;
       if (!res.request.httpVersion.toUpperCase().startsWith("HTTP")) {
         // 只记录 HTTP
-        console.info("cb", res);
+        console.info("ignore", res);
         return;
       }
       const {
@@ -152,6 +158,9 @@ export default {
         request: { url, method },
         response: { status }
       } = res;
+      if (["POST", "PUT"].includes(method)) {
+        console.info(method, url, res);
+      }
       const startKey =
         (+new Date(res.startedDateTime) -
           beginStamp +
@@ -186,19 +195,31 @@ export default {
       this.currentIdx = idx;
       const item = this.lists[idx];
       this.right = true;
-      this.currentVal = "waiting...";
+      this.detail = { requestText: "", responseText: "waiting..." };
       const {
         _: {
           _: [request]
         }
       } = item;
+      if (!request) return;
+      const {
+        request: { postData }
+      } = request;
+      if (postData && postData.text) {
+        this.detail.requestText = postData.text;
+      }
       const content = await getResContent(request);
-      this.currentVal = content
-        ? JSON.stringify(JSON.parse(trimRaw(content)), null, 1)
-        : "--";
+      try {
+        this.detail.responseText = trimRaw(content);
+      } catch (error) {
+        this.detail.responseText = content || "--";
+      }
     },
     unSelect() {
-      this.currentVal = "";
+      this.detail = {
+        requestText: "",
+        responseText: ""
+      };
       this.right = false;
       this.currentIdx = undefined;
     }

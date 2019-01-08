@@ -8,16 +8,19 @@
       展开层级:
       解析路径: {{ path }}
     </div>
-    <pre v-if="isRaw">{{ data.value }}</pre>
-    <vue-json-pretty
-      v-else
-      :showLength="true"
-      :deep="deep"
-      selectableType="tree"
-      :data="objData"
-      :path="path"
-      @click="click"
-    ></vue-json-pretty>
+    <div v-for="(item,idx) in items" :key="idx">
+      <div class="title" :class="item.title">{{item.title.startsWith('request') ? '请求':'响应'}}</div>
+      <pre v-if="isRaw(item.value)">{{ item.value }}</pre>
+      <vue-json-pretty
+        v-else
+        :showLength="true"
+        :deep="deep"
+        selectableType="tree"
+        :data="objData(item.value)"
+        :path="path"
+        @click="click"
+      ></vue-json-pretty>
+    </div>
   </div>
 </template>
 <script>
@@ -29,7 +32,11 @@ export default {
   components: {
     VueJsonPretty
   },
-  props: ["data"],
+  props: {
+    data: {
+      type: [Object, String]
+    }
+  },
   data() {
     return {
       deep: 4
@@ -39,17 +46,33 @@ export default {
     path() {
       return this.data.path;
     },
-    isRaw() {
-      return !isJson(this.data.value);
-    },
-    objData() {
-      if (this.isRaw) return this.data.value;
-      return JSON.parse(this.data.value);
+    items() {
+      if (typeof this.data.value === "string") {
+        return [{ title: "", value: this.data.value }];
+      } else {
+        return Object.entries(this.data.value)
+          .filter(([_, value]) => !!value)
+          .map(([title, value]) => {
+            return { title, value };
+          });
+      }
     }
+  },
+  mounted() {
+    console.info("a", this);
   },
   methods: {
     click(...payload) {
       this.$emit("click", ...payload);
+    },
+    isRaw(value) {
+      return !isJson(value);
+    },
+    objData(value) {
+      if (isJson(value)) {
+        return JSON.parse(value);
+      }
+      return value;
     }
   }
 };
@@ -66,6 +89,15 @@ export default {
   width: 50%;
   background: #fff;
   opacity: 0.9;
+}
+.title {
+  font-size: 1.5em;
+}
+.requestText {
+  color: rgb(199, 13, 41);
+}
+.responseText {
+  color: darkgreen;
 }
 </style>
 <style>
