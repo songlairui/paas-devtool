@@ -10,7 +10,6 @@
       <br>
       {{shortUrl[1]}}
     </div>
-    <div class="stamp">{{item.timeStamp}}</div>
   </div>
 </template>
 <script>

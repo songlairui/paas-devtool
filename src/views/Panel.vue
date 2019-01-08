@@ -3,7 +3,6 @@
     <div class="configure">
       <text-btn label="清空" @click="clear"/>
       <switcher label="保留记录" v-model="preserve"/>
-      <text-btn label="debug" :l="5" @click="debug"/>
     </div>
     <div class="panel">
       <div class="left">
@@ -135,13 +134,16 @@ export default {
       this.clear();
     },
     clear() {
+      this.currentVal = "";
+      this.right = false;
       sparseMarks = [];
       this.lists = [];
     },
     cb(res) {
       if (!res) return;
-      if (!res.request.httpVersion.startsWith("HTTP")) {
+      if (!res.request.httpVersion.toUpperCase().startsWith("HTTP")) {
         // 只记录 HTTP
+        console.info("cb", res);
         return;
       }
       const {
@@ -184,7 +186,7 @@ export default {
       this.currentIdx = idx;
       const item = this.lists[idx];
       this.right = true;
-      this.currentVal = "parsing...";
+      this.currentVal = "waiting...";
       const {
         _: {
           _: [request]
@@ -222,7 +224,7 @@ export default {
   flex: 1;
   display: flex;
   background: rgba(255, 255, 255, 0.3);
-  color: #569aff;
+  color: #333;
   font-family: "Courier New", Courier, monospace;
   overflow: hidden;
 }

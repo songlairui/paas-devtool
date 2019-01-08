@@ -1,12 +1,21 @@
-// This is the devtools script, which is called when the user opens the
-// Chrome devtool on a page. We check to see if we global hook has detected
-// Vue presence on the page. If yes, create the Vue panel; otherwise poll
-// for 10 seconds.
 import { panelCallback } from 'src/utils/devBackground';
+import { getOrigin } from 'src/utils';
 
-chrome.devtools.panels.create(
-  'LARY',
-  'icons/128.png',
-  'panel.html',
-  panelCallback
-);
+async function addPanel() {
+  const origin = await getOrigin();
+  if (
+    origin.indexOf('mypaas') === -1 &&
+    origin.indexOf('localhost') === -1 &&
+    !/^https?:\/\/[\d\.]{7,15}/.test(origin)
+  ) {
+    return;
+  }
+  chrome.devtools.panels.create(
+    'PaaS',
+    'icons/128.png',
+    'panel.html',
+    panelCallback
+  );
+}
+
+addPanel();
