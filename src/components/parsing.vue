@@ -1,6 +1,6 @@
 <template>
   <div class="layer">
-    <div class="absoluted">
+    <div class="control">
       <text-btn label="关闭" @click="$emit('pop')"></text-btn>展开层级:
       <text-btn label="-" @click="deep-=1"></text-btn>
       <input type="number" min="0" max="100" v-model.number="deep">
@@ -8,21 +8,23 @@
       展开层级:
       解析路径: {{ path }}
     </div>
-    <div v-for="(item,idx) in items" :key="idx">
-      <div
-        class="title"
-        :class="item.title"
-      >{{item.title ? (item.title.startsWith('request') ? '请求':'响应') :'JSON.parse'}}</div>
-      <pre v-if="isRaw(item.value)">{{ item.value }}</pre>
-      <vue-json-pretty
-        v-else
-        :showLength="true"
-        :deep="deep"
-        selectableType="tree"
-        :data="objData(item.value)"
-        :path="path"
-        @click="click"
-      ></vue-json-pretty>
+    <div class="stage">
+      <div v-for="(item,idx) in items" :key="idx">
+        <div
+          class="title"
+          :class="item.title"
+        >{{item.title ? (item.title.startsWith('request') ? '请求':'响应') :'JSON.parse'}}</div>
+        <pre v-if="isRaw(item.value)">{{ item.value }}</pre>
+        <vue-json-pretty
+          v-else
+          :showLength="true"
+          :deep="deep"
+          selectableType="tree"
+          :data="objData(item.value)"
+          :path="path"
+          @click="click"
+        ></vue-json-pretty>
+      </div>
     </div>
   </div>
 </template>
@@ -80,15 +82,16 @@ export default {
 <style scoped>
 .layer {
   position: relative;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
 }
-.fixed {
-  position: absolute;
-  top: 0;
-  left: 0;
-  z-index: 999;
-  background: #fff;
-  opacity: 0.9;
-  border-radius: 10px;
+.control {
+  flex: 0 0;
+}
+.stage {
+  flex: 1;
+  overflow: auto;
 }
 .title {
   font-size: 1.5em;

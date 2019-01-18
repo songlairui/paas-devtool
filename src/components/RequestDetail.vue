@@ -4,6 +4,7 @@
     <div class="stacks" v-for="(stack,idx) in allLayers" :key="idx">
       <parsing :data="stack" @click="handleClick" @pop="pop"></parsing>
     </div>
+    <div class="loading" v-if="loading">{{ info }}</div>
   </div>
 </template>
 <script>
@@ -26,7 +27,9 @@ export default {
   },
   data() {
     return {
-      stacks: []
+      stacks: [],
+      loading: false,
+      info: ""
     };
   },
   computed: {
@@ -46,14 +49,21 @@ export default {
     }
   },
   methods: {
-    handleClick(key, value) {
+    async handleClick(key, value) {
       if (typeof value !== "string") return;
       if (value.length < 20) return;
       if (!isJson(value)) return;
-      this.stacks.push({
-        path: `${key}>`,
-        value
-      });
+      try {
+        this.loading = true;
+        this.info = "解析中 ...";
+        await new Promise(r => setTimeout(r, 10));
+        this.stacks.push({
+          path: `${key}>`,
+          value
+        });
+      } catch (error) {}
+      this.loading = false;
+      this.info = "";
     },
     pop() {
       if (this.stacks.length) {
@@ -78,5 +88,18 @@ export default {
   top: 0;
   background: rgba(255, 255, 255, 0.9);
   overflow: auto;
+}
+.loading {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  left: 0;
+  top: 0;
+  background: rgba(255, 255, 255, 0.6);
+  color: #333;
+  font-size: 2em;
+  display: flex;
+  justify-content: center;
+  align-items: center;
 }
 </style>

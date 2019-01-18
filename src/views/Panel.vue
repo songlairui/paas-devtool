@@ -12,6 +12,7 @@
             <request-item :item="item"/>
           </li>
         </ul>
+        <div class="placeholder" v-if="!lists.length">只显示HTTP请求</div>
       </div>
       <div class="right" v-if="right">
         <request-detail :detail="detail" @pop="unSelect"/>
@@ -233,5 +234,11 @@ export default {
 .left ul li.curr {
   background: #569aff;
   color: #fff;
+}
+.placeholder{
+  height: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center
 }
 </style>
