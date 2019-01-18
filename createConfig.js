@@ -61,7 +61,7 @@ function createConfig(config, target = { chrome: 52, firefox: 48 }) {
             }
           ]
         },
-        { test: /\.(png|woff2)$/, loader: 'url-loader?limit=0' }
+        { test: /\.(svg|png|woff2)$/, loader: 'url-loader?limit=0' }
       ]
     },
     performance: {

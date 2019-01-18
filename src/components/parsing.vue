@@ -9,7 +9,10 @@
       解析路径: {{ path }}
     </div>
     <div v-for="(item,idx) in items" :key="idx">
-      <div class="title" :class="item.title">{{item.title.startsWith('request') ? '请求':'响应'}}</div>
+      <div
+        class="title"
+        :class="item.title"
+      >{{item.title ? (item.title.startsWith('request') ? '请求':'响应') :'JSON.parse'}}</div>
       <pre v-if="isRaw(item.value)">{{ item.value }}</pre>
       <vue-json-pretty
         v-else
@@ -57,9 +60,6 @@ export default {
           });
       }
     }
-  },
-  mounted() {
-    console.info("a", this);
   },
   methods: {
     click(...payload) {

@@ -20,16 +20,14 @@ function itor(marks, raw, from) {
       value = str;
     }
   } else {
-    if (raw.length < 10000 && isJSON(raw)) {
-      value = raw;
-    }
+    value = raw;
     done = true;
   }
   return { value, idx, done };
 }
 
 export function trimRaw(raw) {
-  if (!raw || raw[0] !== '{') {
+  if (!raw || raw.trim()[0] !== '{') {
     throw new Error('oriStr is not Object');
   }
   let from = 0;

@@ -41,7 +41,7 @@ export default {
     }
   },
   watch: {
-    content() {
+    detail() {
       this.stacks = [];
     }
   },
