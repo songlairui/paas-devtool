@@ -1,9 +1,5 @@
 <template>
   <div class="wrapper">
-    <div class="configure">
-      <text-btn v-if="lists.length" label="清空" @click="clear"/>
-      <!-- <switcher label="保留记录" v-model="preserve"/> -->
-    </div>
     <div class="panel" :style="{flexDirection: flexDirection}">
       <div class="left">
         <ul>
@@ -21,7 +17,6 @@
         <request-detail :detail="detail" @pop="unSelect"/>
       </div>
     </div>
-    <div v-if="false" class="debug-info">{{ window }} {{ flexDirection }}</div>
   </div>
 </template>
 <script>
@@ -76,7 +71,7 @@ export default {
       chrome.devtools.network.onRequestFinished.addListener(this.cb);
       chrome.runtime.onMessage.addListener(async request => {
         if (request === "paas-panel-shown") {
-          vm.lists = await vm.loadEntries();
+          vm.clear();
         } else if (request === "paas-panel-hidden") {
         } else {
           console.info("onMessage", request);
@@ -115,21 +110,18 @@ export default {
       });
       return cared;
     },
-    debug() {
-      console.info("this", this.lists, sparseMarks);
-    },
     naviCb() {
-      if (this.preserve) return;
       this.clear();
     },
-    clear() {
+    async clear() {
       this.detail = {
         requestText: "",
         responseText: ""
       };
-      this.right = false;
-      sparseMarks = [];
-      this.lists = [];
+      this.lists = await this.loadEntries();
+      if (!this.lists.length) {
+        this.right = false;
+      }
     },
     async cb(res) {
       if (!res) return;
@@ -241,22 +233,5 @@ export default {
 .left ul li.curr {
   background: #569aff;
   color: #fff;
-}
-.configure {
-  position: fixed;
-  top: 40%;
-  left: 40%;
-  transform: translate(-50%, -50%) translateY(-20px);
-  z-index: 999;
-}
-.debug-info {
-  white-space: pre-wrap;
-  background: rgba(0, 0, 0, 0.3);
-  position: fixed;
-  bottom: 0;
-  left: 40%;
-  min-height: 5em;
-  width: 40em;
-  z-index: 888;
 }
 </style>
