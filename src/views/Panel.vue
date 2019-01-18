@@ -28,14 +28,12 @@ import { trimRaw } from "../utils/jsonStr";
 import { getTabId, getOrigin, getHAREntries, getResContent } from "../utils";
 
 let ORIGIN = "";
-let sparseMarks = [];
-let beginStamp = +new Date();
 
 export default {
   name: "panel",
   data() {
     return {
-      title: "Panel in dev 3",
+      title: "Panel in dev 4",
       lists: [],
       currentIdx: undefined,
       right: false,
@@ -48,20 +46,6 @@ export default {
       }
     };
   },
-  async created() {
-    const [tabId, origin] = await Promise.all([
-      await getTabId(),
-      await getOrigin()
-    ]);
-    ORIGIN = origin;
-    this.tabId = tabId;
-    await this.initPreserveLogs();
-    if (!tabId) {
-      console.warn("hook failed");
-    } else {
-      this.addHooks();
-    }
-  },
   filters: {
     localeTime(str) {
       return `${new Date(str).toLocaleTimeString()} ${str.slice(19, 23)}`;
@@ -71,9 +55,24 @@ export default {
     }
   },
   methods: {
-    async initPreserveLogs() {
+    addHooks() {
+      if (this.hooked || !this.tabId) return;
+      this.hooked = true;
+      const vm = this;
+      chrome.devtools.network.onNavigated.addListener(this.naviCb);
+      chrome.devtools.network.onRequestFinished.addListener(this.cb);
+      chrome.runtime.onMessage.addListener(async request => {
+        if (request === "paas-panel-shown") {
+          vm.lists = await vm.loadEntries();
+        } else if (request === "paas-panel-hidden") {
+        } else {
+          console.info("onMessage", request);
+        }
+      });
+    },
+    async loadEntries() {
       const entries = await getHAREntries();
-      if (!entries.length) return;
+      const cared = [];
       entries.forEach(entry => {
         const {
           startedDateTime,
@@ -85,7 +84,7 @@ export default {
         } = entry;
         if (!httpVersion.startsWith("HTTP")) return;
         if (mimeType !== "application/json") return;
-        this.lists.push({
+        cared.push({
           _: Object.freeze({ _: [entry] }),
           initiator: ORIGIN,
           timeStamp: +new Date(startedDateTime),
@@ -94,43 +93,10 @@ export default {
           status
         });
       });
-    },
-    addHooks() {
-      if (this.hooked || !this.tabId) return;
-      this.hooked = true;
-      chrome.devtools.network.onNavigated.addListener(this.naviCb);
-      chrome.devtools.network.onRequestFinished.addListener(this.cb);
-      chrome.webRequest.onBeforeRequest.addListener(
-        this.markCb,
-        { urls: ["<all_urls>"], tabId: this.tabId },
-        ["blocking", "requestBody"]
-      );
+      return cared;
     },
     debug() {
       console.info("this", this.lists, sparseMarks);
-    },
-    markCb(request) {
-      if (!request) return;
-      if (request.type !== "xmlhttprequest") return;
-      ["frameId", "tabId", "parentFrameId", "type"].forEach(key => {
-        delete request[key];
-      });
-      // place a freeze place
-      request.status = -1;
-      request._ = Object.freeze({ _: [] });
-      this.lists.push(request);
-      // 乐观认为统一毫秒之内，请求不超过10个，观测到的最多两个
-      let key = parseInt(request.timeStamp - beginStamp) * 10;
-      const end = key + 10;
-      while (sparseMarks[key]) {
-        if (key >= end) {
-          console.warn("too dense request");
-          return;
-        }
-        // 向后逐个尝试存储
-        key++;
-      }
-      sparseMarks[key] = request;
     },
     naviCb() {
       if (this.preserve) return;
@@ -145,7 +111,7 @@ export default {
       sparseMarks = [];
       this.lists = [];
     },
-    cb(res) {
+    async cb(res) {
       if (!res) return;
       if (!res.request.httpVersion.toUpperCase().startsWith("HTTP")) {
         // 只记录 HTTP
@@ -161,35 +127,7 @@ export default {
       if (["POST", "PUT"].includes(method)) {
         console.info(method, url, res);
       }
-      const startKey =
-        (+new Date(res.startedDateTime) -
-          beginStamp +
-          Math.floor(_blocked_queueing)) *
-        10;
-      const endKey = startKey + 20; // 两部分均由floor变为ceil，则误差范围为10的2倍
-      // 稀疏数组不会遍历间隙
-      const targetIdx = sparseMarks
-        .slice(startKey, endKey)
-        .findIndex(target => {
-          if (!target) return;
-          try {
-            const needFillRes = !target._._[0];
-            const urlEqual = url === target.url;
-            const methodEqual = method === target.method;
-            if (!needFillRes || !urlEqual || !methodEqual) return false;
-            return true;
-          } catch (error) {
-            return false;
-          }
-        });
-      if (targetIdx === -1) {
-        // 忽略
-        return;
-      }
-      const targetItem = sparseMarks[startKey + targetIdx];
-      targetItem._._[0] = res;
-      targetItem.status = status;
-      delete sparseMarks[startKey + targetIdx];
+      this.lists = await this.loadEntries();
     },
     async select(idx) {
       this.currentIdx = idx;
@@ -224,11 +162,21 @@ export default {
       this.currentIdx = undefined;
     }
   },
-  mounted() {
-    console.info("mounted", this);
+  async created() {
+    const [tabId, origin] = await Promise.all([
+      await getTabId(),
+      await getOrigin()
+    ]);
+    ORIGIN = origin;
+    this.tabId = tabId;
+    this.lists = await this.loadEntries();
+    if (!tabId) {
+      console.warn("hook failed");
+    } else {
+      this.addHooks();
+    }
   },
   beforeDestroy() {
-    console.info("beforeDestroy");
     chrome.devtools.network.onRequestFinished.removeListener(this.cb);
   }
 };
