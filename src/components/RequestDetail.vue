@@ -56,11 +56,12 @@ export default {
       try {
         this.loading = true;
         this.info = "解析中 ...";
-        await new Promise(r => setTimeout(r, 10));
+        await new Promise(r => setTimeout(r, 17));
         this.stacks.push({
           path: `${key}>`,
           value
         });
+        await new Promise(r => setTimeout(r, 1));
       } catch (error) {}
       this.loading = false;
       this.info = "";
