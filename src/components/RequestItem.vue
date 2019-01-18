@@ -1,14 +1,11 @@
 <template>
   <div class="request-item">
-    <div class="first">
-      {{item.method}}
-      <br>
-      {{item.status === -1 ? 'waiting' : item.status}}
-    </div>
     <div class="url">
-      {{shortUrl[0]}}
+      <span class="caret" :class="`m-${item.method}`">{{item.method}}</span>
+      <span class="caret" :class="`s-${item.status}`">{{item.status}}</span>
+      <strong>{{shortUrl[1]}}</strong>
       <br>
-      {{shortUrl[1]}}
+      {{shortUrl[0]}}
     </div>
   </div>
 </template>
@@ -25,11 +22,41 @@ export default {
       const shortUrl = url.replace(initiator, "");
       const slashIdx = shortUrl.lastIndexOf("/");
       return [shortUrl.slice(slashIdx + 1), shortUrl.slice(0, slashIdx)];
+    },
+    statusClass() {
+      return [`m-${this.item.method}`, `s-${this.item.status}`];
     }
   }
 };
 </script>
 <style scoped>
+.caret {
+  padding: 0 1px;
+  display: inline-block;
+  border-radius: 0.3em;
+  background: #ddd;
+  margin-right: 0.2em;
+}
+.m-GET {
+  color: cornflowerblue;
+}
+.m-POST {
+  color: gold;
+  background: darkblue;
+}
+.s-200 {
+  color: yellowgreen;
+  background: #fff;
+}
+
+.s-503,
+.s-500,
+.s-400,
+.s-403,
+.s-401 {
+  color: tomato;
+  background: #fff;
+}
 .request-item {
   display: flex;
   padding: 3px 5px;
@@ -40,9 +67,6 @@ export default {
 }
 .first {
   flex: 0 0 3em;
-}
-.url {
-  font-weight: 700;
 }
 .url::first-line {
   color: #222;

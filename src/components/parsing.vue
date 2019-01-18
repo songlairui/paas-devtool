@@ -1,6 +1,6 @@
 <template>
   <div class="layer">
-    <div class="fixed">
+    <div class="absoluted">
       <text-btn label="关闭" @click="$emit('pop')"></text-btn>展开层级:
       <text-btn label="-" @click="deep-=1"></text-btn>
       <input type="number" min="0" max="100" v-model.number="deep">
@@ -79,16 +79,16 @@ export default {
 </script>
 <style scoped>
 .layer {
-  padding-top: 30px;
+  position: relative;
 }
 .fixed {
-  top: 0px;
-  position: fixed;
-  left: 50%;
+  position: absolute;
+  top: 0;
+  left: 0;
   z-index: 999;
-  width: 50%;
   background: #fff;
   opacity: 0.9;
+  border-radius: 10px;
 }
 .title {
   font-size: 1.5em;

@@ -4,7 +4,7 @@
       <text-btn v-if="lists.length" label="清空" @click="clear"/>
       <!-- <switcher label="保留记录" v-model="preserve"/> -->
     </div>
-    <div class="panel">
+    <div class="panel" :style="{flexDirection: flexDirection}">
       <div class="left">
         <ul>
           <li
@@ -21,9 +21,11 @@
         <request-detail :detail="detail" @pop="unSelect"/>
       </div>
     </div>
+    <div v-if="false" class="debug-info">{{ window }} {{ flexDirection }}</div>
   </div>
 </template>
 <script>
+import { debounce } from "lodash";
 import { trimRaw } from "../utils/jsonStr";
 import { getTabId, getOrigin, getHAREntries, getResContent } from "../utils";
 
@@ -43,8 +45,19 @@ export default {
       detail: {
         requestText: "",
         responseText: ""
+      },
+      window: {
+        innerWidth: 1000,
+        innerHeight: 100
       }
     };
+  },
+  computed: {
+    flexDirection() {
+      return this.window.innerWidth > this.window.innerHeight
+        ? "row"
+        : "column";
+    }
   },
   filters: {
     localeTime(str) {
@@ -69,6 +82,13 @@ export default {
           console.info("onMessage", request);
         }
       });
+      window.onresize = debounce(() => {
+        vm.initBoundary();
+      }, 500);
+    },
+    initBoundary() {
+      const { innerWidth, innerHeight } = window;
+      this.window = { innerWidth, innerHeight };
     },
     async loadEntries() {
       const entries = await getHAREntries();
@@ -163,6 +183,7 @@ export default {
     }
   },
   async created() {
+    this.initBoundary();
     const [tabId, origin] = await Promise.all([
       await getTabId(),
       await getOrigin()
@@ -199,9 +220,11 @@ export default {
 }
 .left,
 .right {
-  flex: 1 0 50%;
-  height: 100%;
+  flex: 2 0 40%;
   overflow: auto;
+}
+.right {
+  flex: 3 0 60%;
 }
 .left > ul > li:nth-child(odd) {
   background: #f5f5f5;
@@ -211,8 +234,8 @@ export default {
   cursor: pointer;
 }
 .left ul li {
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  /* text-overflow: ellipsis; */
+  /* white-space: nowrap; */
   overflow: hidden;
 }
 .left ul li.curr {
@@ -221,8 +244,19 @@ export default {
 }
 .configure {
   position: fixed;
-  top: 0;
-  right: 50%;
+  top: 40%;
+  left: 40%;
+  transform: translate(-50%, -50%) translateY(-20px);
   z-index: 999;
+}
+.debug-info {
+  white-space: pre-wrap;
+  background: rgba(0, 0, 0, 0.3);
+  position: fixed;
+  bottom: 0;
+  left: 40%;
+  min-height: 5em;
+  width: 40em;
+  z-index: 888;
 }
 </style>
